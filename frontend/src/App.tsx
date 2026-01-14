@@ -11,8 +11,10 @@ import OrderFailed from './pages/customer/OrderFailed';
 import TrackOrder from './pages/customer/TrackOrder';
 import Contact from './pages/customer/Contact';
 import About from './pages/customer/About';
+import BookTable from './pages/customer/BookTable';
 import LoginPage from './pages/admin/LoginPage';
 import Dashboard from './pages/admin/Dashboard';
+import BookingManagement from './pages/admin/BookingManagement';
 import MenuManagement from './pages/admin/MenuManagement';
 import Orders from './pages/admin/Orders';
 import StockManagement from './pages/admin/StockManagement';
@@ -35,6 +37,9 @@ function App() {
     <BrowserRouter>
       <ScrollToTop />
       <Routes>
+        {/* Admin Auth */}
+        <Route path="/admin/login" element={<LoginPage />} />
+
         {/* Customer Routes */}
         <Route path="/" element={<CustomerLayout />}>
           <Route index element={<Home />} />
@@ -46,13 +51,15 @@ function App() {
           <Route path="track-order" element={<TrackOrder />} />
           <Route path="contact" element={<Contact />} />
           <Route path="about" element={<About />} />
-          <Route path="/admin/login" element={<LoginPage />} />
+          <Route path="book-table" element={<BookTable />} />
+
         </Route>
 
         {/* Admin Routes */}
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<Navigate to="/admin/dashboard" replace />} />
           <Route path="dashboard" element={<Dashboard />} />
+          <Route path="bookings" element={<BookingManagement />} />
           <Route path="menu" element={<MenuManagement />} />
           <Route path="orders" element={<Orders />} />
           <Route path="stock" element={<StockManagement />} />

@@ -86,11 +86,10 @@ export default function Home() {
                             initial={{ opacity: 0, scale: 0.8 }}
                             animate={{ opacity: 1, scale: 1 }}
                             transition={{ delay: 0.3 }}
-                            className={`inline-flex items-center gap-3 px-6 py-3 rounded-full mb-10 backdrop-blur-xl border ${
-                                isOpen 
-                                    ? 'bg-green-500/10 border-green-500/30 text-green-400' 
+                            className={`inline-flex items-center gap-3 px-6 py-3 rounded-full mb-10 backdrop-blur-xl border ${isOpen
+                                    ? 'bg-green-500/10 border-green-500/30 text-green-400'
                                     : 'bg-red-500/10 border-red-500/30 text-red-400'
-                            }`}
+                                }`}
                         >
                             <span className={`w-3 h-3 rounded-full ${isOpen ? 'bg-green-500' : 'bg-red-500'} animate-pulse shadow-lg`} />
                             <Clock size={18} />
@@ -178,7 +177,7 @@ export default function Home() {
             </section>
 
             {/* Features Section - Modern Cards */}
-            <section className="py-24 bg-black">
+            <section className="py-24 bg-white dark:bg-black transition-colors duration-300">
                 <div className="max-w-7xl mx-auto px-6 lg:px-8">
                     <motion.div
                         initial={{ opacity: 0 }}
@@ -193,18 +192,18 @@ export default function Home() {
                                 whileInView={{ opacity: 1, y: 0 }}
                                 viewport={{ once: true }}
                                 transition={{ delay: index * 0.2 }}
-                                className="group relative p-8 rounded-3xl bg-gradient-to-br from-gray-900 to-gray-800 border border-gray-800 overflow-hidden backdrop-blur-xl hover:border-orange-500/50 transition-all duration-500"
+                                className="group relative p-8 rounded-3xl bg-gray-50 dark:bg-gradient-to-br dark:from-gray-900 dark:to-gray-800 border border-gray-100 dark:border-gray-800 overflow-hidden backdrop-blur-xl hover:border-orange-500/50 transition-all duration-500 shadow-lg dark:shadow-none"
                             >
-                                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-10 transition-opacity duration-500`} />
-                                
+                                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-5 transition-opacity duration-500`} />
+
                                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${feature.color} p-0.5 mb-6`}>
-                                    <div className="w-full h-full rounded-2xl bg-black flex items-center justify-center">
-                                        <feature.icon size={32} className="text-white" />
+                                    <div className="w-full h-full rounded-2xl bg-white dark:bg-black flex items-center justify-center">
+                                        <feature.icon size={32} className="text-gray-900 dark:text-white" />
                                     </div>
                                 </div>
 
-                                <h3 className="text-2xl font-bold text-white mb-4">{feature.title}</h3>
-                                <p className="text-gray-400 leading-relaxed">{feature.description}</p>
+                                <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">{feature.title}</h3>
+                                <p className="text-gray-600 dark:text-gray-400 leading-relaxed">{feature.description}</p>
 
                                 <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-orange-500 to-red-500 scale-x-0 group-hover:scale-x-100 transition-transform duration-700 origin-left" />
                             </motion.div>

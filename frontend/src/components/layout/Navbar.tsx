@@ -1,5 +1,5 @@
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { ShoppingCart, LogOut, LogIn, Menu } from 'lucide-react';
+import { ShoppingCart, LogOut, Menu } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import { useAuthStore } from '../../store/useAuthStore';
 import ThemeToggle from '../ui/ThemeToggle';
@@ -15,7 +15,7 @@ export default function Navbar() {
 
     const handleLogout = () => {
         logout();
-        navigate('/login');
+        navigate('/');
     };
 
     return (
@@ -32,8 +32,8 @@ export default function Navbar() {
 
                     {/* Desktop Navigation Links */}
                     <div className="hidden md:flex items-center space-x-10">
-                        {['Home', 'Menu', 'About', 'Contact'].map((item) => {
-                            const path = item === 'Home' ? '/' : `/${item.toLowerCase()}`;
+                        {['Home', 'Menu', 'Book Table', 'Track Order', 'About', 'Contact'].map((item) => {
+                            const path = item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`;
                             const isActive = location.pathname === path;
                             return (
                                 <Link
@@ -69,7 +69,7 @@ export default function Navbar() {
                         </Link>
 
                         {/* Auth Section */}
-                        {isAuthenticated ? (
+                        {isAuthenticated && (
                             <div className="flex items-center gap-4">
                                 <div className="hidden sm:flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
@@ -87,17 +87,6 @@ export default function Navbar() {
                                     <LogOut size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors" />
                                 </button>
                             </div>
-                        ) : (
-                            <Link
-                                to="/login"
-                                className="group relative px-6 py-2.5 rounded-full bg-gradient-to-r from-orange-500 to-red-500 text-white font-semibold text-sm overflow-hidden shadow-xl hover:shadow-orange-500/30 transition-all duration-300 hover:scale-105"
-                            >
-                                <span className="relative flex items-center gap-2">
-                                    <LogIn size={18} />
-                                    Login
-                                </span>
-                                <span className="absolute inset-0 bg-white/20 scale-0 group-hover:scale-150 transition-transform duration-500 rounded-full"></span>
-                            </Link>
                         )}
 
                         {/* Mobile Menu Button */}
@@ -114,8 +103,8 @@ export default function Navbar() {
                 {mobileMenuOpen && (
                     <div className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-lg shadow-2xl border-t border-gray-200 dark:bg-gray-950/95 dark:border-gray-800">
                         <div className="px-6 py-6 space-y-4">
-                            {['Home', 'Menu', 'About', 'Contact'].map((item) => {
-                                const path = item === 'Home' ? '/' : `/${item.toLowerCase()}`;
+                            {['Home', 'Menu', 'Book Table', 'Track Order', 'About', 'Contact'].map((item) => {
+                                const path = item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`;
                                 const isActive = location.pathname === path;
                                 return (
                                     <Link

@@ -128,7 +128,7 @@ export default function About() {
 
                                 <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${value.color} p-0.5 mb-6`}>
                                     <div className="w-full h-full rounded-2xl bg-white dark:bg-gray-900 flex items-center justify-center">
-                                        <value.icon size={32} className="text-white" />
+                                        <value.icon size={32} className="text-gray-900 dark:text-white" />
                                     </div>
                                 </div>
 

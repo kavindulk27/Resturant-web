@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Truck, Store, CreditCard, Wallet, Loader2, ChevronRight, ChevronLeft, MapPin, Phone, User, CheckCircle2, Info } from 'lucide-react';
+import { useOrderStore } from '../../store/useOrderStore';
 import { useCartStore } from '../../store/useCartStore';
-import { motion } from 'framer-motion';
-import { Truck, Store, CreditCard, Wallet, Loader2 } from 'lucide-react';
 
 type CheckoutForm = {
     name: string;
@@ -11,18 +12,33 @@ type CheckoutForm = {
     deliveryMethod: 'delivery' | 'pickup';
     address: string;
     paymentMethod: 'cash' | 'card';
+    cardNumber?: string;
+    cardExpiry?: string;
+    cardCVC?: string;
+    cardName?: string;
+    location?: { lat: number; lng: number };
 };
+
+const STEPS = [
+    { id: 'method', title: 'Service', icon: Truck },
+    { id: 'details', title: 'Details', icon: User },
+    { id: 'payment', title: 'Payment', icon: CreditCard },
+];
 
 export default function Checkout() {
     const { items, getTotal, clearCart } = useCartStore();
+    const { addOrder } = useOrderStore();
     const navigate = useNavigate();
     const subtotal = getTotal();
     const [isProcessing, setIsProcessing] = useState(false);
+    const [currentStep, setCurrentStep] = useState(0);
 
     const {
         register,
         handleSubmit,
         watch,
+        trigger,
+        setValue,
         formState: { errors },
     } = useForm<CheckoutForm>({
         defaultValues: {
@@ -31,233 +47,430 @@ export default function Checkout() {
         },
     });
 
+    const [showMap, setShowMap] = useState(false);
+    const orderLocation = watch('location');
+
     const deliveryMethod = watch('deliveryMethod');
-    const deliveryFee = deliveryMethod === 'delivery' ? 5 : 0;
-    const total = subtotal + deliveryFee;
+    const paymentMethod = watch('paymentMethod');
+    const total = subtotal; // Delivery fee is now 0 as per previous task
+
+    const nextStep = async () => {
+        let fieldsToValidate: (keyof CheckoutForm)[] = [];
+        if (currentStep === 0) fieldsToValidate = ['deliveryMethod'];
+        if (currentStep === 1) {
+            fieldsToValidate = ['name', 'phone'];
+            if (deliveryMethod === 'delivery') fieldsToValidate.push('address');
+        }
+
+        const isValid = await trigger(fieldsToValidate);
+        if (isValid) {
+            setCurrentStep((prev) => Math.min(prev + 1, STEPS.length - 1));
+        }
+    };
+
+    const prevStep = () => {
+        setCurrentStep((prev) => Math.max(prev - 1, 0));
+    };
 
     const onSubmit = async (data: CheckoutForm) => {
+        if (currentStep < STEPS.length - 1) {
+            nextStep();
+            return;
+        }
         setIsProcessing(true);
-        await new Promise((resolve) => setTimeout(resolve, 2000)); // Simulate API
+        // Simulate API call
+        await new Promise((resolve) => setTimeout(resolve, 2500));
 
-        console.log('Order placed:', { ...data, items, subtotal, deliveryFee, total });
+        const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
+        const newOrder = {
+            id: orderId,
+            items: items.map(item => ({
+                id: item.id,
+                name: item.name,
+                price: item.price,
+                quantity: item.quantity,
+                image: item.image
+            })),
+            subtotal,
+            deliveryFee: 0,
+            total,
+            status: 'pending' as const,
+            customerName: data.name,
+            phone: data.phone,
+            address: data.deliveryMethod === 'delivery' ? data.address : 'Store Pickup',
+            deliveryMethod: data.deliveryMethod,
+            paymentMethod: data.paymentMethod,
+            location: data.location,
+            createdAt: new Date().toISOString(),
+            estimatedArrival: '30-45 mins'
+        };
+
+        addOrder(newOrder);
         clearCart();
         navigate('/order-success');
     };
 
     if (items.length === 0) {
-        navigate('/cart');
-        return null;
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <div className="text-center">
+                    <h2 className="text-2xl font-bold mb-4">Your cart is empty</h2>
+                    <Link to="/menu" className="text-orange-500 hover:underline">Back to Menu</Link>
+                </div>
+            </div>
+        );
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-50 dark:from-gray-950 dark:via-black dark:to-gray-950 py-16 px-6">
-            {/* Hero Header */}
-            <div className="max-w-7xl mx-auto text-center mb-12">
-                <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-5xl md:text-6xl font-extrabold text-gray-900 dark:text-white mb-4"
-                >
-                    Complete Your Order
-                </motion.h1>
-                <motion.p
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.2 }}
-                    className="text-xl text-gray-600 dark:text-gray-400"
-                >
-                    Just a few details and your delicious meal will be on its way
-                </motion.p>
-            </div>
-
-            <form onSubmit={handleSubmit(onSubmit)} className="max-w-7xl mx-auto">
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-                    {/* Form Section */}
-                    <div className="lg:col-span-2 space-y-8">
-                        {/* Personal Details */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="bg-white dark:bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8"
-                        >
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Personal Details</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Full Name
-                                    </label>
-                                    <input
-                                        {...register('name', { required: 'Name is required' })}
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-gray-900 dark:text-white"
-                                        placeholder="John Doe"
-                                    />
-                                    {errors.name && <p className="mt-2 text-sm text-red-500">{errors.name.message}</p>}
+        <div className="min-h-screen bg-gray-50 dark:bg-black py-12 px-4">
+            <div className="max-w-4xl mx-auto">
+                {/* Progress Bar */}
+                <div className="mb-12">
+                    <div className="flex justify-between items-center relative">
+                        <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-800 -translate-y-1/2 -z-10" />
+                        <div
+                            className="absolute top-1/2 left-0 h-0.5 bg-orange-500 -translate-y-1/2 -z-10 transition-all duration-500"
+                            style={{ width: `${(currentStep / (STEPS.length - 1)) * 100}%` }}
+                        />
+                        {STEPS.map((step, idx) => {
+                            const Icon = step.icon;
+                            const isActive = idx <= currentStep;
+                            const isCurrent = idx === currentStep;
+                            return (
+                                <div key={step.id} className="flex flex-col items-center">
+                                    <div className={`w-12 h-12 rounded-full flex items-center justify-center transition-all duration-300 ${isCurrent ? 'bg-orange-500 text-white shadow-lg shadow-orange-500/30 scale-110' :
+                                        isActive ? 'bg-orange-500 text-white' : 'bg-gray-200 dark:bg-gray-800 text-gray-400'
+                                        }`}>
+                                        <Icon size={20} />
+                                    </div>
+                                    <span className={`mt-2 text-sm font-bold ${isActive ? 'text-orange-500' : 'text-gray-400'}`}>
+                                        {step.title}
+                                    </span>
                                 </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Phone Number
-                                    </label>
-                                    <input
-                                        {...register('phone', { required: 'Phone is required' })}
-                                        type="tel"
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all text-gray-900 dark:text-white"
-                                        placeholder="+1 (555) 123-4567"
-                                    />
-                                    {errors.phone && <p className="mt-2 text-sm text-red-500">{errors.phone.message}</p>}
-                                </div>
+                            );
+                        })}
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Main Form Area */}
+                    <div className="lg:col-span-2">
+                        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+                            <AnimatePresence mode="wait">
+                                {currentStep === 0 && (
+                                    <motion.div
+                                        key="step0"
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-800"
+                                    >
+                                        <h2 className="text-2xl font-bold mb-6">How would you like your food?</h2>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            {[
+                                                { id: 'delivery' as const, icon: Truck, label: 'Delivery', desc: 'Free • 30-45 min' },
+                                                { id: 'pickup' as const, icon: Store, label: 'Pickup', desc: 'Free • Ready in 20 min' }
+                                            ].map((method) => (
+                                                <label
+                                                    key={method.id}
+                                                    className={`cursor-pointer rounded-2xl p-6 border-2 transition-all ${deliveryMethod === method.id
+                                                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
+                                                        : 'border-gray-100 dark:border-gray-800 hover:border-orange-200'
+                                                        }`}
+                                                >
+                                                    <input type="radio" value={method.id} {...register('deliveryMethod')} className="sr-only" />
+                                                    <method.icon size={32} className={deliveryMethod === method.id ? 'text-orange-500' : 'text-gray-400'} />
+                                                    <p className="mt-4 font-bold text-lg">{method.label}</p>
+                                                    <p className="text-sm text-gray-500">{method.id === 'delivery' ? method.desc : 'Ready in 20 min'}</p>
+                                                </label>
+                                            ))}
+                                        </div>
+
+                                        {deliveryMethod === 'delivery' && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex gap-3 text-blue-600 dark:text-blue-400"
+                                            >
+                                                <Info size={20} className="shrink-0" />
+                                                <p className="text-sm font-medium">
+                                                    Delivery is free within 3 km. Extra charges apply for longer distances.
+                                                </p>
+                                            </motion.div>
+                                        )}
+                                    </motion.div>
+                                )}
+
+                                {currentStep === 1 && (
+                                    <motion.div
+                                        key="step1"
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-800 space-y-6"
+                                    >
+                                        <h2 className="text-2xl font-bold mb-2">{deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'} Details</h2>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Full Name</label>
+                                                <div className="relative">
+                                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <input
+                                                        {...register('name', { required: 'Name is required' })}
+                                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500"
+                                                        placeholder="John Doe"
+                                                    />
+                                                </div>
+                                                {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Phone Number</label>
+                                                <div className="relative">
+                                                    <Phone className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                                    <input
+                                                        {...register('phone', { required: 'Phone is required' })}
+                                                        className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500"
+                                                        placeholder="+1 (555) 000-0000"
+                                                    />
+                                                </div>
+                                                {errors.phone && <p className="text-red-500 text-xs mt-1">{errors.phone.message}</p>}
+                                            </div>
+                                            {deliveryMethod === 'delivery' && (
+                                                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                                                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Delivery Address</label>
+                                                    <div className="relative">
+                                                        <MapPin className="absolute left-4 top-4 text-gray-400" size={18} />
+                                                        <textarea
+                                                            {...register('address', { required: 'Address is required for delivery' })}
+                                                            rows={3}
+                                                            className="w-full pl-12 pr-4 py-3 rounded-xl border border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800 focus:ring-2 focus:ring-orange-500"
+                                                            placeholder="Enter your full street address..."
+                                                        />
+                                                    </div>
+                                                    {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
+
+                                                    <div className="mt-4">
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setShowMap(true)}
+                                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${orderLocation
+                                                                    ? 'border-green-500 bg-green-50 text-green-600 dark:bg-green-900/10'
+                                                                    : 'border-orange-200 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/10'
+                                                                }`}
+                                                        >
+                                                            <MapPin size={18} />
+                                                            <span className="font-bold">
+                                                                {orderLocation ? 'Location Pinned' : 'Pin Location on Map'}
+                                                            </span>
+                                                        </button>
+                                                        {orderLocation && (
+                                                            <p className="text-[10px] text-gray-500 mt-1 ml-1">
+                                                                Coordinates: {orderLocation.lat.toFixed(4)}, {orderLocation.lng.toFixed(4)}
+                                                            </p>
+                                                        )}
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+
+                                {currentStep === 2 && (
+                                    <motion.div
+                                        key="step2"
+                                        initial={{ opacity: 0, x: 20 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        exit={{ opacity: 0, x: -20 }}
+                                        className="bg-white dark:bg-gray-900 rounded-3xl p-8 shadow-xl border border-gray-100 dark:border-gray-800 space-y-6"
+                                    >
+                                        <h2 className="text-2xl font-bold mb-6">Payment Method</h2>
+                                        <div className="space-y-4">
+                                            {[
+                                                { id: 'cash' as const, icon: Wallet, label: 'Cash on Delivery', desc: 'Pay when food arrives' },
+                                                { id: 'card' as const, icon: CreditCard, label: 'Credit / Debit Card', desc: 'Secure online payment' }
+                                            ].map((method) => (
+                                                <label
+                                                    key={method.id}
+                                                    className={`flex items-center gap-4 p-4 rounded-2xl border-2 cursor-pointer transition-all ${paymentMethod === method.id
+                                                        ? 'border-orange-500 bg-orange-50 dark:bg-orange-900/10'
+                                                        : 'border-gray-100 dark:border-gray-800'
+                                                        }`}
+                                                >
+                                                    <input type="radio" value={method.id} {...register('paymentMethod')} className="sr-only" />
+                                                    <div className={`p-3 rounded-xl ${paymentMethod === method.id ? 'bg-orange-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400'}`}>
+                                                        <method.icon size={24} />
+                                                    </div>
+                                                    <div className="flex-1">
+                                                        <p className="font-bold">{method.label}</p>
+                                                        <p className="text-xs text-gray-500">{method.desc}</p>
+                                                    </div>
+                                                    {paymentMethod === method.id && <CheckCircle2 className="text-orange-500" size={24} />}
+                                                </label>
+                                            ))}
+
+                                            {paymentMethod === 'card' && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, scale: 0.95 }}
+                                                    animate={{ opacity: 1, scale: 1 }}
+                                                    className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4"
+                                                >
+                                                    <div>
+                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Card Number</label>
+                                                        <input
+                                                            className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
+                                                            placeholder="0000 0000 0000 0000"
+                                                        />
+                                                    </div>
+                                                    <div className="grid grid-cols-2 gap-4">
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Expiry</label>
+                                                            <input className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700" placeholder="MM/YY" />
+                                                        </div>
+                                                        <div>
+                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">CVC</label>
+                                                            <input className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700" placeholder="000" />
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            )}
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+
+                            <div className="flex gap-4 pt-4">
+                                {currentStep > 0 && (
+                                    <button
+                                        type="button"
+                                        onClick={prevStep}
+                                        className="flex-1 py-4 px-6 rounded-2xl border-2 border-gray-200 dark:border-gray-800 font-bold flex items-center justify-center gap-2 hover:bg-gray-100 dark:hover:bg-gray-900 transition-all"
+                                    >
+                                        <ChevronLeft size={20} /> Back
+                                    </button>
+                                )}
+                                {currentStep < STEPS.length - 1 ? (
+                                    <button
+                                        type="button"
+                                        onClick={nextStep}
+                                        className="flex-[2] py-4 px-6 rounded-2xl bg-orange-500 text-white font-bold flex items-center justify-center gap-2 hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30"
+                                    >
+                                        Continue <ChevronRight size={20} />
+                                    </button>
+                                ) : (
+                                    <button
+                                        type="submit"
+                                        disabled={isProcessing}
+                                        className="flex-[2] py-4 px-6 rounded-2xl bg-orange-500 text-white font-bold flex items-center justify-center gap-2 hover:bg-orange-600 transition-all shadow-lg shadow-orange-500/30 disabled:opacity-50"
+                                    >
+                                        {isProcessing ? <Loader2 className="animate-spin" /> : 'Confirm Order'}
+                                        {!isProcessing && <CheckCircle2 size={20} />}
+                                    </button>
+                                )}
                             </div>
-                        </motion.div>
-
-                        {/* Delivery Method */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.1 }}
-                            className="bg-white dark:bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8"
-                        >
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Delivery Method</h2>
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <label
-                                    className={`relative cursor-pointer rounded-3xl p-8 border-4 transition-all duration-300 ${
-                                        deliveryMethod === 'delivery'
-                                            ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 shadow-xl'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                    }`}
-                                >
-                                    <input type="radio" value="delivery" {...register('deliveryMethod')} className="sr-only" />
-                                    <div className="flex flex-col items-center text-center">
-                                        <Truck size={48} className="text-orange-600 mb-4" />
-                                        <span className="text-xl font-bold text-gray-900 dark:text-white">Delivery</span>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400 mt-1">$5.00 fee • 30-45 min</span>
-                                    </div>
-                                </label>
-
-                                <label
-                                    className={`relative cursor-pointer rounded-3xl p-8 border-4 transition-all duration-300 ${
-                                        deliveryMethod === 'pickup'
-                                            ? 'border-orange-500 bg-gradient-to-br from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20 shadow-xl'
-                                            : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
-                                    }`}
-                                >
-                                    <input type="radio" value="pickup" {...register('deliveryMethod')} className="sr-only" />
-                                    <div className="flex flex-col items-center text-center">
-                                        <Store size={48} className="text-orange-600 mb-4" />
-                                        <span className="text-xl font-bold text-gray-900 dark:text-white">Pickup</span>
-                                        <span className="text-sm text-gray-600 dark:text-gray-400 mt-1">Free • Ready in 20 min</span>
-                                    </div>
-                                </label>
-                            </div>
-
-                            {deliveryMethod === 'delivery' && (
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="mt-8"
-                                >
-                                    <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
-                                        Delivery Address
-                                    </label>
-                                    <textarea
-                                        {...register('address', { required: 'Address is required for delivery' })}
-                                        rows={4}
-                                        className="w-full px-5 py-4 rounded-2xl border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-800 focus:ring-4 focus:ring-orange-500/20 focus:border-orange-500 transition-all resize-none text-gray-900 dark:text-white"
-                                        placeholder="123 Food Street, Apt 4B, New York, NY 10001"
-                                    />
-                                    {errors.address && <p className="mt-2 text-sm text-red-500">{errors.address.message}</p>}
-                                </motion.div>
-                            )}
-                        </motion.div>
-
-                        {/* Payment Method */}
-                        <motion.div
-                            initial={{ opacity: 0, x: -40 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            transition={{ delay: 0.2 }}
-                            className="bg-white dark:bg-gray-900/50 backdrop-blur-xl rounded-3xl shadow-2xl border border-gray-200 dark:border-gray-800 p-8"
-                        >
-                            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6">Payment Method</h2>
-                            <div className="space-y-4">
-                                <label className="flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-orange-500/50 cursor-pointer transition-all">
-                                    <input type="radio" value="cash" {...register('paymentMethod')} className="w-6 h-6 text-orange-600" />
-                                    <Wallet size={32} className="text-green-600" />
-                                    <div>
-                                        <p className="font-bold text-gray-900 dark:text-white">Cash on Delivery</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Pay with cash when your order arrives</p>
-                                    </div>
-                                </label>
-                                <label className="flex items-center gap-4 p-5 rounded-2xl border-2 border-gray-200 dark:border-gray-700 hover:border-orange-500/50 cursor-pointer transition-all">
-                                    <input type="radio" value="card" {...register('paymentMethod')} className="w-6 h-6 text-orange-600" />
-                                    <CreditCard size={32} className="text-blue-600" />
-                                    <div>
-                                        <p className="font-bold text-gray-900 dark:text-white">Credit / Debit Card</p>
-                                        <p className="text-sm text-gray-600 dark:text-gray-400">Secure payment powered by Stripe</p>
-                                    </div>
-                                </label>
-                            </div>
-                        </motion.div>
+                        </form>
                     </div>
 
-                    {/* Order Summary Sidebar */}
+                    {/* Summary Sidebar */}
                     <div className="lg:col-span-1">
-                        <motion.div
-                            initial={{ opacity: 0, y: 40 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            className="bg-gradient-to-br from-orange-500 to-red-500 rounded-3xl shadow-2xl text-white p-8 sticky top-24"
-                        >
-                            <h3 className="text-3xl font-extrabold mb-8">Order Summary</h3>
-
-                            <div className="space-y-4 mb-8 max-h-96 overflow-y-auto pr-2">
+                        <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-gray-800 sticky top-24">
+                            <h3 className="text-xl font-bold mb-6">Order Summary</h3>
+                            <div className="space-y-4 max-h-60 overflow-y-auto pr-2 mb-6">
                                 {items.map((item) => (
-                                    <div key={item.id} className="flex items-center justify-between py-3 border-b border-white/20 last:border-0">
-                                        <div className="flex items-center gap-4">
-                                            <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center font-bold">
-                                                {item.quantity}x
+                                    <div key={item.id} className="flex justify-between items-center bg-gray-50 dark:bg-gray-800/50 p-3 rounded-xl">
+                                        <div className="flex items-center gap-3">
+                                            <img src={item.image} alt={item.name} className="w-12 h-12 object-cover rounded-lg" />
+                                            <div>
+                                                <p className="text-sm font-bold truncate w-24">{item.name}</p>
+                                                <p className="text-xs text-gray-500">{item.quantity}x</p>
                                             </div>
-                                            <span className="font-medium">{item.name}</span>
                                         </div>
-                                        <span className="font-bold">${(item.price * item.quantity).toFixed(2)}</span>
+                                        <p className="font-bold">${(item.price * item.quantity).toFixed(2)}</p>
                                     </div>
                                 ))}
                             </div>
-
-                            <div className="space-y-4 pt-6 border-t border-white/30">
-                                <div className="flex justify-between text-lg">
-                                    <span className="opacity-90">Subtotal</span>
+                            <div className="border-t border-gray-100 dark:border-gray-800 pt-4 space-y-2">
+                                <div className="flex justify-between text-gray-500">
+                                    <span>Subtotal</span>
                                     <span>${subtotal.toFixed(2)}</span>
                                 </div>
-                                <div className="flex justify-between text-lg">
-                                    <span className="opacity-90">Delivery Fee</span>
-                                    <span>${deliveryFee.toFixed(2)}</span>
+                                <div className="flex justify-between text-gray-500">
+                                    <span>{deliveryMethod === 'delivery' ? 'Delivery' : 'Pickup'}</span>
+                                    <span className="text-green-500 font-bold">Free</span>
                                 </div>
-                                <div className="pt-6 border-t border-white/30">
-                                    <div className="flex justify-between text-3xl font-extrabold">
-                                        <span>Total</span>
-                                        <span>${total.toFixed(2)}</span>
+                                <div className="flex justify-between text-xl font-extrabold pt-2">
+                                    <span>Total</span>
+                                    <span className="text-orange-500">${total.toFixed(2)}</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Map Picker Modal Mock */}
+            <AnimatePresence>
+                {showMap && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9, y: 20 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.9, y: 20 }}
+                            className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl"
+                        >
+                            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
+                                <h3 className="text-xl font-black">Select Delivery Location</h3>
+                                <button
+                                    onClick={() => setShowMap(false)}
+                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
+                                >
+                                    <ChevronLeft size={24} />
+                                </button>
+                            </div>
+
+                            <div className="relative h-96 bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
+                                {/* Mock Map Background */}
+                                <div className="absolute inset-0 opacity-50 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')] bg-cover bg-center" />
+
+                                {/* Pulse for the pin location */}
+                                <div className="relative">
+                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-orange-500/20 rounded-full animate-ping" />
+                                    <div className="relative z-10 text-orange-500">
+                                        <MapPin size={48} strokeWidth={3} />
                                     </div>
+                                </div>
+
+                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-6 py-3 rounded-2xl shadow-xl text-center border border-gray-100 dark:border-gray-800">
+                                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Target Location</p>
+                                    <p className="font-bold text-sm">6.9271° N, 79.8612° E (Colombo, SL)</p>
                                 </div>
                             </div>
 
-                            <button
-                                type="submit"
-                                disabled={isProcessing}
-                                className="w-full mt-10 py-6 bg-white text-gray-900 font-bold text-xl rounded-2xl shadow-2xl hover:shadow-inner transform hover:scale-105 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed disabled:transform-none flex items-center justify-center gap-3 group"
-                            >
-                                {isProcessing ? (
-                                    <>
-                                        <Loader2 className="animate-spin" size={28} />
-                                        Processing...
-                                    </>
-                                ) : (
-                                    <>
-                                        Place Order
-                                        <CreditCard className="group-hover:translate-x-1 transition-transform" size={28} />
-                                    </>
-                                )}
-                            </button>
+                            <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex gap-4">
+                                <button
+                                    onClick={() => setShowMap(false)}
+                                    className="flex-1 py-4 font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        setValue('location', { lat: 6.9271, lng: 79.8612 });
+                                        setShowMap(false);
+                                    }}
+                                    className="flex-[2] py-4 bg-orange-500 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-all"
+                                >
+                                    Confirm Location
+                                </button>
+                            </div>
                         </motion.div>
-                    </div>
-                </div>
-            </form>
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 }

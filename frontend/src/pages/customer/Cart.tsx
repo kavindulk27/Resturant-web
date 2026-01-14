@@ -7,8 +7,7 @@ export default function Cart() {
     const { items, removeItem, updateQuantity, getTotal } = useCartStore();
     const navigate = useNavigate();
     const subtotal = getTotal();
-    const deliveryFee = 5.0;
-    const total = subtotal + deliveryFee;
+    const total = subtotal;
 
     // Empty Cart State
     if (items.length === 0) {
@@ -133,10 +132,6 @@ export default function Cart() {
                                 <div className="flex justify-between">
                                     <span className="opacity-90">Subtotal</span>
                                     <span className="font-bold">${subtotal.toFixed(2)}</span>
-                                </div>
-                                <div className="flex justify-between">
-                                    <span className="opacity-90">Delivery Fee</span>
-                                    <span className="font-bold">${deliveryFee.toFixed(2)}</span>
                                 </div>
                                 <div className="pt-6 border-t border-white/20">
                                     <div className="flex justify-between text-2xl font-extrabold">

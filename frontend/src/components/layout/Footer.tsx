@@ -1,4 +1,5 @@
 import { Facebook, Instagram, Twitter, Mail, Phone, MapPin, Clock } from 'lucide-react';
+
 import Logo from '../ui/Logo';
 
 export default function Footer() {
@@ -44,10 +45,10 @@ export default function Footer() {
                             Quick Links
                         </h3>
                         <ul className="space-y-3">
-                            {['Home', 'Menu', 'About Us', 'Contact'].map((link) => (
+                            {['Home', 'Menu', 'Track Order', 'About Us', 'Contact'].map((link) => (
                                 <li key={link}>
                                     <a
-                                        href="#"
+                                        href={link === 'Home' ? '/' : `/${link.toLowerCase().replace(' ', '-')}`}
                                         className="text-gray-400 hover:text-orange-500 transition-colors duration-200 flex items-center gap-2 group"
                                     >
                                         <span className="w-0 group-hover:w-4 h-0.5 bg-orange-500 transition-all duration-300" />

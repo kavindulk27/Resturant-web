@@ -6,6 +6,7 @@ type Theme = 'light' | 'dark';
 interface ThemeState {
     theme: Theme;
     toggleTheme: () => void;
+    setTheme: (theme: Theme) => void;
 }
 
 export const useThemeStore = create<ThemeState>()(
@@ -23,6 +24,16 @@ export const useThemeStore = create<ThemeState>()(
                     }
                     return { theme: newTheme };
                 }),
+            setTheme: (theme) =>
+                set(() => {
+                    if (theme === 'dark') {
+                        document.documentElement.classList.add('dark');
+                    } else {
+                        document.documentElement.classList.remove('dark');
+                    }
+                    return { theme };
+                }),
+
         }),
         {
             name: 'theme-storage',
