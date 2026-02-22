@@ -31,7 +31,15 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.get('menu/items/');
-            const mappedData = response.data.map((item: any) => ({
+            const mappedData = response.data.map((item: {
+                id: number;
+                name: string;
+                description: string;
+                price: string | number;
+                category: string;
+                image: string;
+                available: boolean;
+            }) => ({
                 id: item.id.toString(),
                 name: item.name,
                 description: item.description,
@@ -41,8 +49,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
                 available: item.available
             }));
             set({ items: mappedData, isLoading: false });
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 
@@ -51,8 +60,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
         try {
             const response = await api.post('menu/items/', item);
             set((state) => ({ items: [...state.items, response.data], isLoading: false }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 
@@ -64,8 +74,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
                 items: state.items.map((item) => item.id === id ? response.data : item),
                 isLoading: false
             }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 
@@ -77,8 +88,9 @@ export const useMenuStore = create<MenuState>((set, get) => ({
                 items: state.items.filter((item) => item.id !== id),
                 isLoading: false
             }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 

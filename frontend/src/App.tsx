@@ -11,7 +11,7 @@ import OrderFailed from './pages/customer/OrderFailed';
 import TrackOrder from './pages/customer/TrackOrder';
 import Contact from './pages/customer/Contact';
 import About from './pages/customer/About';
-import BookTable from './pages/customer/BookTable';
+
 import CustomerLogin from './pages/customer/LoginPage';
 import LoginPage from './pages/admin/LoginPage';
 import Dashboard from './pages/admin/Dashboard';
@@ -52,7 +52,7 @@ function App() {
           <Route path="track-order" element={<TrackOrder />} />
           <Route path="contact" element={<Contact />} />
           <Route path="about" element={<About />} />
-          <Route path="book-table" element={<BookTable />} />
+
           <Route path="login" element={<CustomerLogin />} />
         </Route>
 

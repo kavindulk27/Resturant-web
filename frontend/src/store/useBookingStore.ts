@@ -35,10 +35,18 @@ export const useBookingStore = create<BookingState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             const response = await api.get('bookings/');
-            // Map backend snake_case to frontend camelCase if necessary, 
-            // but DRF usually handles this or we can adjust models.
-            // Assuming for now the API returns compatible fields.
-            const mappedData = response.data.map((b: any) => ({
+            const mappedData = response.data.map((b: {
+                id: number;
+                customer_name: string;
+                phone: string;
+                email: string;
+                date: string;
+                time: string;
+                guests: number;
+                status: BookingStatus;
+                created_at: string;
+                special_request?: string;
+            }) => ({
                 id: b.id.toString(),
                 customerName: b.customer_name,
                 phone: b.phone,
@@ -51,8 +59,9 @@ export const useBookingStore = create<BookingState>((set, get) => ({
                 specialRequest: b.special_request
             }));
             set({ bookings: mappedData, isLoading: false });
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 
@@ -68,7 +77,7 @@ export const useBookingStore = create<BookingState>((set, get) => ({
                 guests: bookingData.guests,
                 special_request: bookingData.specialRequest
             });
-            const newBooking = {
+            const newBooking: Booking = {
                 id: response.data.id.toString(),
                 customerName: response.data.customer_name,
                 phone: response.data.phone,
@@ -81,8 +90,9 @@ export const useBookingStore = create<BookingState>((set, get) => ({
                 specialRequest: response.data.special_request
             };
             set((state) => ({ bookings: [newBooking, ...state.bookings], isLoading: false }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 
@@ -94,8 +104,9 @@ export const useBookingStore = create<BookingState>((set, get) => ({
                 bookings: state.bookings.map((b) => b.id === id ? { ...b, status } : b),
                 isLoading: false
             }));
-        } catch (error: any) {
-            set({ error: error.message, isLoading: false });
+        } catch (error: unknown) {
+            const message = error instanceof Error ? error.message : 'An unknown error occurred';
+            set({ error: message, isLoading: false });
         }
     },
 

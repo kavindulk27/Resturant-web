@@ -1,48 +1,14 @@
 import { Link } from 'react-router-dom';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useEffect } from 'react';
 import {
-    ArrowRight, Clock, Truck, ShieldCheck,
+    ArrowRight, Truck, ShieldCheck,
     Star, ChevronRight, UtensilsCrossed, Flame, Award, Users,
 } from 'lucide-react';
 import ProductCard from '../../components/shared/ProductCard';
+import { useMenuStore } from '../../store/useMenuStore';
 
 /* ─── static data ─────────────────────────────────────────── */
-const POPULAR_ITEMS = [
-    {
-        id: '1',
-        name: 'Spicy Chicken Burger',
-        price: 12.99,
-        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Crispy golden chicken fillet with our signature spicy sauce, fresh lettuce & melted cheese.',
-        category: 'Burger',
-    },
-    {
-        id: '2',
-        name: 'Margherita Pizza',
-        price: 14.99,
-        image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Stone-baked crust with San Marzano tomato sauce, fresh buffalo mozzarella & basil.',
-        category: 'Pizza',
-    },
-    {
-        id: '3',
-        name: 'Pasta Carbonara',
-        price: 16.99,
-        image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Silky egg & pecorino cream sauce with guanciale, black pepper & parmesan.',
-        category: 'Pasta',
-    },
-    {
-        id: '4',
-        name: 'Grilled Salmon',
-        price: 22.99,
-        image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Atlantic salmon fillet, herb butter, roasted vegetables & lemon caper sauce.',
-        category: 'Seafood',
-    },
-];
-
 const FEATURES = [
     {
         icon: Truck,
@@ -110,6 +76,12 @@ export default function Home() {
     const heroY = useTransform(scrollYProgress, [0, 1], ['0%', '25%']);
     const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
 
+    const { items, fetchItems } = useMenuStore();
+
+    useEffect(() => {
+        fetchItems();
+    }, [fetchItems]);
+
     return (
         <div className="min-h-screen overflow-x-hidden bg-white dark:bg-gray-950">
 
@@ -131,8 +103,6 @@ export default function Home() {
                     />
                     <div className="absolute inset-0 bg-gradient-to-b from-black/70 via-black/85 to-black" />
                 </motion.div>
-
-
 
                 {/* Hero content */}
                 <motion.div
@@ -195,7 +165,7 @@ export default function Home() {
                         </Link>
 
                         <Link
-                            to="/book-table"
+                            to="/contact"
                             className="flex items-center gap-3 px-10 py-5 rounded-2xl border-2 border-white/25 backdrop-blur bg-white/5 text-white font-bold text-lg hover:border-white/50 hover:bg-white/10 transition-all duration-300"
                         >
                             <UtensilsCrossed size={20} />
@@ -315,7 +285,7 @@ export default function Home() {
 
                     {/* Cards grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-                        {POPULAR_ITEMS.map((item, i) => (
+                        {items.slice(0, 4).map((item, i) => (
                             <motion.div
                                 key={item.id}
                                 initial={{ opacity: 0, y: 40 }}
@@ -512,59 +482,121 @@ export default function Home() {
             {/* ── divider ── */}
             <div className="h-px bg-gradient-to-r from-transparent via-orange-500/40 to-transparent" />
 
-            <section className="py-12 px-6 lg:px-8 bg-white dark:bg-black">
-                <div className="max-w-5xl mx-auto">
+            <section className="py-24 px-6 lg:px-8 bg-white dark:bg-black overflow-hidden">
+                <div className="max-w-6xl mx-auto">
                     <motion.div
                         initial={{ opacity: 0, y: 40 }}
                         whileInView={{ opacity: 1, y: 0 }}
                         viewport={{ once: true }}
-                        transition={{ duration: 0.9 }}
-                        className="relative rounded-3xl overflow-hidden isolate"
+                        transition={{ duration: 1, ease: [0.22, 1, 0.36, 1] }}
+                        className="relative rounded-[2.5rem] overflow-hidden group shadow-[0_30px_100px_rgba(0,0,0,0.3)]"
                     >
-                        {/* BG */}
-                        <div className="absolute inset-0 bg-gradient-to-br from-orange-600 via-red-600 to-pink-700" />
-                        <div
-                            className="absolute inset-0 opacity-[0.07]"
-                            style={{
-                                backgroundImage: 'radial-gradient(circle, rgba(255,255,255,0.5) 1px, transparent 1px)',
-                                backgroundSize: '28px 28px',
-                            }}
-                        />
-                        <div className="absolute -top-20 -right-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
-                        <div className="absolute -bottom-20 -left-20 w-80 h-80 bg-white/10 rounded-full blur-3xl" />
+                        {/* ── Background Layer ── */}
+                        <div className="absolute inset-0">
+                            <img
+                                src="https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?ixlib=rb-4.0.3&auto=format&fit=crop&w=1920&q=90"
+                                alt="Premium Cocktails & Ambiance"
+                                className="w-full h-full object-cover transition-transform duration-1000 group-hover:scale-105"
+                            />
+                            {/* Layered overlays for depth */}
+                            <div className="absolute inset-0 bg-gradient-to-br from-black/80 via-black/60 to-black/90" />
+                            <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(249,115,22,0.1),transparent_70%)]" />
+                            <div className="absolute inset-0 opacity-20 bg-[url('https://www.transparenttextures.com/patterns/p6.png')] pointer-events-none" />
+                        </div>
 
-                        {/* Content */}
-                        <div className="relative z-10 text-center py-20 px-8 lg:py-24 lg:px-16">
-                            <div className="inline-flex items-center gap-2 px-5 py-2 rounded-full bg-white/15 backdrop-blur border border-white/20 text-white text-sm font-medium mb-8">
-                                <Clock size={16} />
-                                Open until 11 PM tonight
-                            </div>
+                        {/* ── Animated Bokehs ── */}
+                        {[...Array(3)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                animate={{
+                                    x: [0, 50, -50, 0],
+                                    y: [0, -30, 30, 0],
+                                    opacity: [0.2, 0.4, 0.2]
+                                }}
+                                transition={{
+                                    duration: 10 + i * 2,
+                                    repeat: Infinity,
+                                    ease: "linear"
+                                }}
+                                className="absolute w-64 h-64 bg-orange-500/20 rounded-full blur-[80px]"
+                                style={{
+                                    top: `${20 + i * 30}%`,
+                                    left: `${10 + i * 40}%`
+                                }}
+                            />
+                        ))}
 
-                            <h2 className="text-4xl md:text-6xl font-extrabold text-white mb-6 leading-tight">
+                        {/* ── Content Container ── */}
+                        <div className="relative z-10 py-24 px-8 lg:py-32 lg:px-20 flex flex-col items-center text-center">
+
+                            {/* Animated Badge */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.9 }}
+                                whileInView={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.2 }}
+                                className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-white text-sm font-semibold tracking-wide mb-10 shadow-xl"
+                            >
+                                <div className="flex -space-x-2">
+                                    {[1, 2, 3].map((i) => (
+                                        <div key={i} className="w-6 h-6 rounded-full border-2 border-orange-500 bg-gray-800 flex items-center justify-center text-[10px]">
+                                            ⭐
+                                        </div>
+                                    ))}
+                                </div>
+                                <span className="ml-1">Join 15k+ Premium Members</span>
+                                <div className="w-1 h-1 rounded-full bg-orange-500 mx-1" />
+                                <span className="text-orange-400">Open until 11 PM</span>
+                            </motion.div>
+
+                            {/* Headline */}
+                            <h2 className="text-5xl md:text-7xl font-black text-white mb-8 leading-[1.1] tracking-tight max-w-4xl">
                                 Ready for Something{' '}
-                                <br className="hidden md:block" />
-                                Extraordinary?
+                                <span className="relative inline-block">
+                                    <span className="bg-gradient-to-r from-orange-400 via-amber-200 to-orange-500 bg-clip-text text-transparent">
+                                        Extraordinary?
+                                    </span>
+                                    {/* Underline accent */}
+                                    <motion.div
+                                        initial={{ width: 0 }}
+                                        whileInView={{ width: '100%' }}
+                                        transition={{ delay: 0.8, duration: 1 }}
+                                        className="absolute -bottom-2 left-0 h-1 bg-gradient-to-r from-orange-500/0 via-orange-500 to-orange-500/0"
+                                    />
+                                </span>
                             </h2>
 
-                            <p className="text-white/80 text-xl mb-10 max-w-2xl mx-auto">
-                                Join 15,000+ happy customers and experience food that's crafted to perfection. Your next favourite meal is one click away.
+                            <p className="text-gray-300 text-xl md:text-2xl mb-12 max-w-2xl font-light leading-relaxed">
+                                Elevate your dining experience with flavors that transcend the ordinary. Your masterpiece is waiting.
                             </p>
 
-                            <div className="flex flex-col sm:flex-row justify-center gap-4">
+                            {/* CTAs */}
+                            <div className="flex flex-col sm:flex-row items-center justify-center gap-6 w-full">
                                 <Link
                                     to="/menu"
-                                    className="group flex items-center justify-center gap-3 px-10 py-5 bg-white text-orange-600 font-bold text-lg rounded-2xl shadow-2xl hover:shadow-white/20 hover:scale-105 transition-all duration-300"
+                                    className="group relative w-full sm:w-auto px-12 py-5 bg-gradient-to-br from-orange-500 to-red-600 text-white font-bold text-xl rounded-2xl shadow-[0_20px_40px_-10px_rgba(249,115,22,0.4)] hover:shadow-[0_25px_50px_-12px_rgba(249,115,22,0.6)] hover:-translate-y-1 transition-all duration-300 overflow-hidden text-center"
                                 >
-                                    Order Now
-                                    <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />
+                                    <div className="absolute inset-0 bg-white/20 -translate-x-full group-hover:translate-x-full transition-transform duration-700 skew-x-12" />
+                                    <span className="relative flex items-center justify-center gap-3">
+                                        Experience Now
+                                        <ArrowRight size={22} className="group-hover:translate-x-1.5 transition-transform" />
+                                    </span>
                                 </Link>
+
                                 <Link
-                                    to="/book-table"
-                                    className="flex items-center justify-center gap-3 px-10 py-5 border-2 border-white/30 bg-white/10 backdrop-blur text-white font-bold text-lg rounded-2xl hover:bg-white/20 hover:border-white/50 transition-all duration-300"
+                                    to="/contact"
+                                    className="w-full sm:w-auto flex items-center justify-center gap-3 px-12 py-5 border-2 border-white/20 bg-white/5 backdrop-blur-md text-white font-bold text-xl rounded-2xl hover:bg-white/10 hover:border-white/40 transition-all duration-300"
                                 >
-                                    <UtensilsCrossed size={20} />
-                                    Reserve a Table
+                                    <UtensilsCrossed size={20} className="text-orange-400" />
+                                    Reserve Private Table
                                 </Link>
+                            </div>
+
+                            {/* Trust Indicator */}
+                            <div className="mt-12 pt-8 border-t border-white/10 w-full max-w-lg flex items-center justify-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all duration-500">
+                                <Award size={24} className="text-white" />
+                                <ShieldCheck size={24} className="text-white" />
+                                <Star size={24} className="text-white" />
+                                <Users size={24} className="text-white" />
                             </div>
                         </div>
                     </motion.div>
