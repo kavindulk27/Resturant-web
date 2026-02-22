@@ -1,77 +1,34 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import ProductCard from '../../components/shared/ProductCard';
-import { Search } from 'lucide-react';
+import { Search, Loader2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-
-const CATEGORIES = ['All', 'Burger', 'Pizza', 'Pasta', 'Beverages', 'Desserts'];
-
-const MOCK_MENU_ITEMS = [
-    {
-        id: '1',
-        name: 'Spicy Chicken Burger',
-        price: 12.99,
-        image: 'https://images.unsplash.com/photo-1568901346375-23c9450c58cd?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Crispy chicken fillet with spicy sauce, lettuce, and cheese.',
-        category: 'Burger',
-    },
-    {
-        id: '2',
-        name: 'Margherita Pizza',
-        price: 14.99,
-        image: 'https://images.unsplash.com/photo-1604382354936-07c5d9983bd3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Classic tomato sauce, fresh mozzarella, and basil.',
-        category: 'Pizza',
-    },
-    {
-        id: '3',
-        name: 'Pasta Carbonara',
-        price: 16.99,
-        image: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Creamy sauce with bacon, egg, and parmesan cheese.',
-        category: 'Pasta',
-    },
-    {
-        id: '4',
-        name: 'Double Cheeseburger',
-        price: 15.99,
-        image: 'https://images.unsplash.com/photo-1594212699903-ec8a3eca50f5?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Two beef patties, cheddar cheese, pickles, and onions.',
-        category: 'Burger',
-    },
-    {
-        id: '5',
-        name: 'Pepperoni Pizza',
-        price: 16.99,
-        image: 'https://images.unsplash.com/photo-1628840042765-356cda07504e?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Spicy pepperoni, mozzarella cheese, and tomato sauce.',
-        category: 'Pizza',
-    },
-    {
-        id: '6',
-        name: 'Iced Coffee',
-        price: 4.99,
-        image: 'https://images.unsplash.com/photo-1517701604599-bb29b5dd73ad?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Cold brewed coffee with milk and ice.',
-        category: 'Beverages',
-    },
-    {
-        id: '7',
-        name: 'Chocolate Cake',
-        price: 6.99,
-        image: 'https://images.unsplash.com/photo-1578985545062-69928b1d9587?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
-        description: 'Rich chocolate cake with ganache topping.',
-        category: 'Desserts',
-    }
-];
+import { useMenuStore } from '../../store/useMenuStore';
 
 export default function Menu() {
+    const { items, fetchItems, isLoading } = useMenuStore();
     const [activeCategory, setActiveCategory] = useState('All');
     const [searchQuery, setSearchQuery] = useState('');
 
-    const filteredItems = MOCK_MENU_ITEMS.filter((item) => {
+    useEffect(() => {
+        fetchItems();
+    }, [fetchItems]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black">
+                <Loader2 className="animate-spin text-orange-500" size={48} />
+            </div>
+        );
+    }
+
+    // Get unique categories for filter from live items
+    const categories = ['All', ...new Set((items || []).map(item => item?.category).filter(Boolean))];
+
+    const filteredItems = (items || []).filter((item) => {
+        if (!item) return false;
         const matchesCategory = activeCategory === 'All' || item.category === activeCategory;
-        const matchesSearch = item.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            item.description.toLowerCase().includes(searchQuery.toLowerCase());
+        const matchesSearch = (item.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+            (item.description || '').toLowerCase().includes(searchQuery.toLowerCase());
         return matchesCategory && matchesSearch;
     });
 
@@ -113,15 +70,15 @@ export default function Menu() {
                     <div className="flex flex-col lg:flex-row justify-between items-center gap-8">
                         {/* Category Pills */}
                         <div className="flex items-center gap-3 overflow-x-auto pb-2 lg:pb-0 scrollbar-hide">
-                            {CATEGORIES.map((category) => (
+                            {categories.map((category) => (
                                 <motion.button
                                     key={category}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => setActiveCategory(category)}
-                                    className={`px - 6 py - 3 rounded - full font - medium whitespace - nowrap transition - all duration - 300 ${activeCategory === category
+                                    className={`px-6 py-3 rounded-full font-medium whitespace-nowrap transition-all duration-300 ${activeCategory === category
                                         ? 'bg-gradient-to-r from-orange-500 to-red-500 text-white shadow-xl shadow-orange-500/30'
                                         : 'bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700'
-                                        } `}
+                                        }`}
                                 >
                                     {category}
                                 </motion.button>

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { Calendar, Clock, User, Phone, Mail, MessageSquare, CheckCircle2, ChevronRight, Loader2 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useBookingStore } from '../../store/useBookingStore';
@@ -35,27 +35,24 @@ export default function BookTable() {
 
     const onSubmit = async (data: BookingForm) => {
         setIsSubmitting(true);
-        // Simulate API call
-        await new Promise(resolve => setTimeout(resolve, 1500));
-
-        const newBooking = {
-            id: `BK-${Math.floor(10000 + Math.random() * 90000)}`,
-            customerName: data.name,
-            phone: data.phone,
-            email: data.email,
-            date: data.date,
-            time: data.time,
-            guests: data.guests,
-            status: 'pending' as const,
-            createdAt: new Date().toISOString(),
-            specialRequest: data.request
-        };
-
-        addBooking(newBooking);
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        toast.success('Booking Request Sent!');
-        reset();
+        try {
+            await addBooking({
+                customerName: data.name,
+                phone: data.phone,
+                email: data.email,
+                date: data.date,
+                time: data.time,
+                guests: data.guests,
+                specialRequest: data.request
+            });
+            setIsSubmitted(true);
+            toast.success('Booking Request Sent!');
+            reset();
+        } catch (error) {
+            toast.error('Failed to send booking request');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     if (isSubmitted) {

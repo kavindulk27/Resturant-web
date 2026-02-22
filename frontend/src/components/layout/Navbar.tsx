@@ -18,6 +18,18 @@ export default function Navbar() {
         navigate('/');
     };
 
+    const navLinks = [
+        { name: 'Home', path: '/' },
+        { name: 'Menu', path: '/menu' },
+        { name: 'Track Order', path: '/track-order' },
+        { name: 'About', path: '/about' },
+        { name: 'Contact', path: '/contact' },
+    ];
+
+    if (localStorage.getItem('showAdminLogin') === 'true') {
+        navLinks.push({ name: 'Admin Login', path: '/admin/login' });
+    }
+
     return (
         <nav className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-lg shadow-lg border-b border-gray-200/50 dark:bg-gray-950/90 dark:border-gray-800/50">
             <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -32,20 +44,19 @@ export default function Navbar() {
 
                     {/* Desktop Navigation Links */}
                     <div className="hidden md:flex items-center space-x-10">
-                        {['Home', 'Menu', 'Book Table', 'Track Order', 'About', 'Contact'].map((item) => {
-                            const path = item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`;
-                            const isActive = location.pathname === path;
+                        {navLinks.map((item) => {
+                            const isActive = location.pathname === item.path;
                             return (
                                 <Link
-                                    key={item}
-                                    to={path}
+                                    key={item.name}
+                                    to={item.path}
                                     className={`relative font-medium transition-all duration-300
                                         ${isActive
                                             ? 'text-orange-600 dark:text-orange-500 after:absolute after:bottom-0 after:left-0 after:h-0.5 after:bg-orange-500 after:w-full'
                                             : 'text-gray-700 hover:text-orange-600 dark:text-gray-200 dark:hover:text-orange-500 after:absolute after:bottom-0 after:left-0 after:w-0 after:h-0.5 after:bg-orange-500 after:transition-all after:duration-300 hover:after:w-full'
                                         }`}
                                 >
-                                    {item}
+                                    {item.name}
                                 </Link>
                             );
                         })}
@@ -69,15 +80,22 @@ export default function Navbar() {
                         </Link>
 
                         {/* Auth Section */}
-                        {isAuthenticated && (
+                        {isAuthenticated ? (
                             <div className="flex items-center gap-4">
                                 <div className="hidden sm:flex items-center gap-3">
                                     <div className="w-9 h-9 rounded-full bg-gradient-to-br from-orange-400 to-red-500 flex items-center justify-center text-white font-bold text-sm shadow-md">
                                         {user?.name?.charAt(0).toUpperCase()}
                                     </div>
-                                    <span className="text-sm font-semibold text-gray-700 dark:text-gray-200">
-                                        {user?.name}
-                                    </span>
+                                    <div className="flex flex-col">
+                                        <span className="text-sm font-semibold text-gray-700 dark:text-gray-200 leading-none">
+                                            {user?.name}
+                                        </span>
+                                        {user?.role === 'admin' && (
+                                            <Link to="/admin" className="text-[10px] text-orange-600 dark:text-orange-500 font-bold hover:underline">
+                                                Admin Dashboard
+                                            </Link>
+                                        )}
+                                    </div>
                                 </div>
                                 <button
                                     onClick={handleLogout}
@@ -87,6 +105,14 @@ export default function Navbar() {
                                     <LogOut size={20} className="text-gray-600 dark:text-gray-300 group-hover:text-red-600 dark:group-hover:text-red-500 transition-colors" />
                                 </button>
                             </div>
+                        ) : (
+                            <Link
+                                to="/login"
+                                state={{ mode: 'register' }}
+                                className="px-6 py-2 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200 text-sm whitespace-nowrap"
+                            >
+                                Sign Up
+                            </Link>
                         )}
 
                         {/* Mobile Menu Button */}
@@ -103,13 +129,12 @@ export default function Navbar() {
                 {mobileMenuOpen && (
                     <div className="md:hidden absolute top-16 left-0 right-0 bg-white/95 backdrop-blur-lg shadow-2xl border-t border-gray-200 dark:bg-gray-950/95 dark:border-gray-800">
                         <div className="px-6 py-6 space-y-4">
-                            {['Home', 'Menu', 'Book Table', 'Track Order', 'About', 'Contact'].map((item) => {
-                                const path = item === 'Home' ? '/' : `/${item.toLowerCase().replace(' ', '-')}`;
-                                const isActive = location.pathname === path;
+                            {navLinks.map((item) => {
+                                const isActive = location.pathname === item.path;
                                 return (
                                     <Link
-                                        key={item}
-                                        to={path}
+                                        key={item.name}
+                                        to={item.path}
                                         onClick={() => setMobileMenuOpen(false)}
                                         className={`block py-3 text-lg font-medium transition-colors
                                             ${isActive
@@ -117,7 +142,7 @@ export default function Navbar() {
                                                 : 'text-gray-700 hover:text-orange-600 dark:text-gray-200 dark:hover:text-orange-500'
                                             }`}
                                     >
-                                        {item}
+                                        {item.name}
                                     </Link>
                                 );
                             })}
@@ -125,6 +150,6 @@ export default function Navbar() {
                     </div>
                 )}
             </div>
-        </nav>
+        </nav >
     );
 }

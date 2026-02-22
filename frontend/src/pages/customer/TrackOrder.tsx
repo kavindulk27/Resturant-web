@@ -1,14 +1,27 @@
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Check, Clock, MapPin, Phone, ChefHat,
     Truck, ChevronLeft,
-    Timer, AlertCircle, ShoppingBag
+    Timer, AlertCircle, ShoppingBag, Loader2
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useOrderStore, type OrderStatus } from '../../store/useOrderStore';
 
 export default function TrackOrder() {
-    const { orders, activeOrderId } = useOrderStore();
+    const { orders, activeOrderId, fetchOrders, isLoading } = useOrderStore();
+
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
+
+    if (isLoading) {
+        return (
+            <div className="min-h-screen bg-gray-50 dark:bg-black flex items-center justify-center p-6">
+                <Loader2 className="animate-spin text-orange-500" size={48} />
+            </div>
+        );
+    }
     const order = orders.find(o => o.id === activeOrderId) || orders[0];
 
     const DELIVERY_STAGES: { id: OrderStatus; label: string; icon: any; color: string; desc: string }[] = [
@@ -71,7 +84,7 @@ export default function TrackOrder() {
                                         {isPickup ? 'Estimated Readiness' : 'Estimated Arrival'}
                                     </p>
                                     <h2 className="text-4xl md:text-5xl font-black text-gray-900 dark:text-white">
-                                        {order.estimatedArrival}
+                                        {order.estimatedArrival || 'TBD'}
                                     </h2>
                                     <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold uppercase mt-3 ${isPickup ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
                                         }`}>
@@ -105,7 +118,7 @@ export default function TrackOrder() {
                                     return (
                                         <div key={stage.id} className="flex gap-6 items-start relative z-10 group">
                                             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-all duration-500 border-4 border-white dark:border-gray-900 ${isCurrent ? `${stage.color} text-white shadow-xl scale-110` :
-                                                    isActive ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600'
+                                                isActive ? 'bg-green-500 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-300 dark:text-gray-600'
                                                 }`}>
                                                 {isActive && !isCurrent ? <Check size={24} strokeWidth={3} /> : <Icon size={24} className={isCurrent ? 'animate-pulse' : ''} />}
                                             </div>
@@ -149,7 +162,7 @@ export default function TrackOrder() {
                                         <p className="font-bold text-sm text-gray-900 dark:text-white">
                                             {isPickup ? '123 Restaurant Street, City Center' : order.address}
                                         </p>
-                                        {!isPickup && order.location && (
+                                        {!isPickup && order.location && typeof order.location.lat === 'number' && typeof order.location.lng === 'number' && (
                                             <p className="text-[10px] text-orange-500 font-bold mt-1">
                                                 Pinned: {order.location.lat.toFixed(4)}, {order.location.lng.toFixed(4)}
                                             </p>
@@ -180,13 +193,17 @@ export default function TrackOrder() {
                                             </span>
                                             <span className="font-semibold text-gray-900 dark:text-white">{item.name}</span>
                                         </div>
-                                        <span className="font-bold text-gray-900 dark:text-white">${(item.price * item.quantity).toFixed(2)}</span>
+                                        <span className="font-bold text-gray-900 dark:text-white">
+                                            ${(parseFloat(item.price as any || 0) * (item.quantity || 0)).toFixed(2)}
+                                        </span>
                                     </div>
                                 ))}
                             </div>
                             <div className="border-t border-gray-100 dark:border-gray-800 mt-4 pt-4 flex justify-between items-center">
                                 <span className="font-bold text-gray-500">Total Amount</span>
-                                <span className="text-xl font-black text-orange-600">${order.total.toFixed(2)}</span>
+                                <span className="text-xl font-black text-orange-600">
+                                    ${parseFloat(order.total as any || 0).toFixed(2)}
+                                </span>
                             </div>
                         </div>
                     </div>

@@ -3,8 +3,17 @@ import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Truck, Store, CreditCard, Wallet, Loader2, ChevronRight, ChevronLeft, MapPin, Phone, User, CheckCircle2, Info } from 'lucide-react';
-import { useOrderStore } from '../../store/useOrderStore';
 import { useCartStore } from '../../store/useCartStore';
+import api from '../../api/axios';
+import { loadStripe } from '@stripe/stripe-js';
+import {
+    Elements,
+    CardElement,
+    useStripe,
+    useElements,
+} from '@stripe/react-stripe-js';
+
+const stripePromise = loadStripe('pk_test_placeholder');
 
 type CheckoutForm = {
     name: string;
@@ -25,10 +34,11 @@ const STEPS = [
     { id: 'payment', title: 'Payment', icon: CreditCard },
 ];
 
-export default function Checkout() {
+function CheckoutContent() {
     const { items, getTotal, clearCart } = useCartStore();
-    const { addOrder } = useOrderStore();
     const navigate = useNavigate();
+    const stripe = useStripe();
+    const elements = useElements();
     const subtotal = getTotal();
     const [isProcessing, setIsProcessing] = useState(false);
     const [currentStep, setCurrentStep] = useState(0);
@@ -52,7 +62,7 @@ export default function Checkout() {
 
     const deliveryMethod = watch('deliveryMethod');
     const paymentMethod = watch('paymentMethod');
-    const total = subtotal; // Delivery fee is now 0 as per previous task
+    const total = subtotal;
 
     const nextStep = async () => {
         let fieldsToValidate: (keyof CheckoutForm)[] = [];
@@ -78,36 +88,57 @@ export default function Checkout() {
             return;
         }
         setIsProcessing(true);
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2500));
 
-        const orderId = `ORD-${Math.floor(10000 + Math.random() * 90000)}`;
-        const newOrder = {
-            id: orderId,
-            items: items.map(item => ({
-                id: item.id,
-                name: item.name,
-                price: item.price,
-                quantity: item.quantity,
-                image: item.image
-            })),
-            subtotal,
-            deliveryFee: 0,
-            total,
-            status: 'pending' as const,
-            customerName: data.name,
-            phone: data.phone,
-            address: data.deliveryMethod === 'delivery' ? data.address : 'Store Pickup',
-            deliveryMethod: data.deliveryMethod,
-            paymentMethod: data.paymentMethod,
-            location: data.location,
-            createdAt: new Date().toISOString(),
-            estimatedArrival: '30-45 mins'
-        };
+        try {
+            // 1. Create Order in Backend
+            const orderResponse = await api.post('orders/', {
+                customer_name: data.name,
+                phone: data.phone,
+                address: data.deliveryMethod === 'delivery' ? data.address : 'Store Pickup',
+                delivery_method: data.deliveryMethod,
+                payment_method: data.paymentMethod,
+                subtotal: subtotal,
+                delivery_fee: 0,
+                total: total,
+            });
 
-        addOrder(newOrder);
-        clearCart();
-        navigate('/order-success');
+            const createdOrderId = orderResponse.data.id;
+
+            if (data.paymentMethod === 'card') {
+                if (!stripe || !elements) return;
+
+                // 2. Create Payment Intent
+                const intentResponse = await api.post('payments/create-intent/', {
+                    order_id: createdOrderId
+                });
+
+                const clientSecret = intentResponse.data.clientSecret;
+
+                // 3. Confirm Payment
+                const result = await stripe.confirmCardPayment(clientSecret, {
+                    payment_method: {
+                        card: elements.getElement(CardElement)!,
+                        billing_details: {
+                            name: data.name,
+                            phone: data.phone,
+                        },
+                    },
+                });
+
+                if (result.error) {
+                    alert(result.error.message);
+                    setIsProcessing(false);
+                    return;
+                }
+            }
+
+            // 4. Success
+            clearCart();
+            navigate('/order-success');
+        } catch (error: any) {
+            console.error('Checkout error:', error);
+            setIsProcessing(false);
+        }
     };
 
     if (items.length === 0) {
@@ -124,7 +155,6 @@ export default function Checkout() {
     return (
         <div className="min-h-screen bg-gray-50 dark:bg-black py-12 px-4">
             <div className="max-w-4xl mx-auto">
-                {/* Progress Bar */}
                 <div className="mb-12">
                     <div className="flex justify-between items-center relative">
                         <div className="absolute top-1/2 left-0 w-full h-0.5 bg-gray-200 dark:bg-gray-800 -translate-y-1/2 -z-10" />
@@ -153,7 +183,6 @@ export default function Checkout() {
                 </div>
 
                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                    {/* Main Form Area */}
                     <div className="lg:col-span-2">
                         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
                             <AnimatePresence mode="wait">
@@ -185,19 +214,6 @@ export default function Checkout() {
                                                 </label>
                                             ))}
                                         </div>
-
-                                        {deliveryMethod === 'delivery' && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                className="mt-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border border-blue-100 dark:border-blue-800 flex gap-3 text-blue-600 dark:text-blue-400"
-                                            >
-                                                <Info size={20} className="shrink-0" />
-                                                <p className="text-sm font-medium">
-                                                    Delivery is free within 3 km. Extra charges apply for longer distances.
-                                                </p>
-                                            </motion.div>
-                                        )}
                                     </motion.div>
                                 )}
 
@@ -248,27 +264,6 @@ export default function Checkout() {
                                                         />
                                                     </div>
                                                     {errors.address && <p className="text-red-500 text-xs mt-1">{errors.address.message}</p>}
-
-                                                    <div className="mt-4">
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setShowMap(true)}
-                                                            className={`flex items-center gap-2 px-4 py-2 rounded-xl border-2 transition-all ${orderLocation
-                                                                    ? 'border-green-500 bg-green-50 text-green-600 dark:bg-green-900/10'
-                                                                    : 'border-orange-200 text-orange-600 hover:bg-orange-50 dark:hover:bg-orange-900/10'
-                                                                }`}
-                                                        >
-                                                            <MapPin size={18} />
-                                                            <span className="font-bold">
-                                                                {orderLocation ? 'Location Pinned' : 'Pin Location on Map'}
-                                                            </span>
-                                                        </button>
-                                                        {orderLocation && (
-                                                            <p className="text-[10px] text-gray-500 mt-1 ml-1">
-                                                                Coordinates: {orderLocation.lat.toFixed(4)}, {orderLocation.lng.toFixed(4)}
-                                                            </p>
-                                                        )}
-                                                    </div>
                                                 </motion.div>
                                             )}
                                         </div>
@@ -312,24 +307,22 @@ export default function Checkout() {
                                                 <motion.div
                                                     initial={{ opacity: 0, scale: 0.95 }}
                                                     animate={{ opacity: 1, scale: 1 }}
-                                                    className="p-6 bg-gray-50 dark:bg-gray-800/50 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4"
+                                                    className="p-6 bg-gray-50 dark:bg-gray-800 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-4"
                                                 >
-                                                    <div>
-                                                        <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Card Number</label>
-                                                        <input
-                                                            className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700"
-                                                            placeholder="0000 0000 0000 0000"
+                                                    <label className="block text-xs font-bold text-gray-500 uppercase mb-2">Card Details</label>
+                                                    <div className="p-4 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800">
+                                                        <CardElement
+                                                            options={{
+                                                                style: {
+                                                                    base: {
+                                                                        fontSize: '16px',
+                                                                        color: '#32325d',
+                                                                        '::placeholder': { color: '#aab7c4' },
+                                                                    },
+                                                                    invalid: { color: '#fa755a' },
+                                                                },
+                                                            }}
                                                         />
-                                                    </div>
-                                                    <div className="grid grid-cols-2 gap-4">
-                                                        <div>
-                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">Expiry</label>
-                                                            <input className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700" placeholder="MM/YY" />
-                                                        </div>
-                                                        <div>
-                                                            <label className="block text-xs font-bold text-gray-500 uppercase mb-1">CVC</label>
-                                                            <input className="w-full px-4 py-2 rounded-lg bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700" placeholder="000" />
-                                                        </div>
                                                     </div>
                                                 </motion.div>
                                             )}
@@ -370,7 +363,6 @@ export default function Checkout() {
                         </form>
                     </div>
 
-                    {/* Summary Sidebar */}
                     <div className="lg:col-span-1">
                         <div className="bg-white dark:bg-gray-900 rounded-3xl p-6 shadow-xl border border-gray-100 dark:border-gray-800 sticky top-24">
                             <h3 className="text-xl font-bold mb-6">Order Summary</h3>
@@ -407,7 +399,6 @@ export default function Checkout() {
                 </div>
             </div>
 
-            {/* Map Picker Modal Mock */}
             <AnimatePresence>
                 {showMap && (
                     <motion.div
@@ -416,61 +407,17 @@ export default function Checkout() {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
                     >
-                        <motion.div
-                            initial={{ scale: 0.9, y: 20 }}
-                            animate={{ scale: 1, y: 0 }}
-                            exit={{ scale: 0.9, y: 20 }}
-                            className="bg-white dark:bg-gray-900 rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl"
-                        >
-                            <div className="p-6 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center">
-                                <h3 className="text-xl font-black">Select Delivery Location</h3>
-                                <button
-                                    onClick={() => setShowMap(false)}
-                                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
-                                >
-                                    <ChevronLeft size={24} />
-                                </button>
-                            </div>
-
-                            <div className="relative h-96 bg-gray-200 dark:bg-gray-800 flex items-center justify-center overflow-hidden">
-                                {/* Mock Map Background */}
-                                <div className="absolute inset-0 opacity-50 bg-[url('https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&q=80')] bg-cover bg-center" />
-
-                                {/* Pulse for the pin location */}
-                                <div className="relative">
-                                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 bg-orange-500/20 rounded-full animate-ping" />
-                                    <div className="relative z-10 text-orange-500">
-                                        <MapPin size={48} strokeWidth={3} />
-                                    </div>
-                                </div>
-
-                                <div className="absolute bottom-6 left-1/2 -translate-x-1/2 bg-white/90 dark:bg-gray-900/90 backdrop-blur px-6 py-3 rounded-2xl shadow-xl text-center border border-gray-100 dark:border-gray-800">
-                                    <p className="text-xs font-bold text-gray-500 uppercase mb-1">Target Location</p>
-                                    <p className="font-bold text-sm">6.9271° N, 79.8612° E (Colombo, SL)</p>
-                                </div>
-                            </div>
-
-                            <div className="p-6 bg-gray-50 dark:bg-gray-800/50 flex gap-4">
-                                <button
-                                    onClick={() => setShowMap(false)}
-                                    className="flex-1 py-4 font-bold text-gray-500 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-2xl transition-all"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        setValue('location', { lat: 6.9271, lng: 79.8612 });
-                                        setShowMap(false);
-                                    }}
-                                    className="flex-[2] py-4 bg-orange-500 text-white font-bold rounded-2xl shadow-lg shadow-orange-500/30 hover:bg-orange-600 transition-all"
-                                >
-                                    Confirm Location
-                                </button>
-                            </div>
-                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
         </div>
+    );
+}
+
+export default function Checkout() {
+    return (
+        <Elements stripe={stripePromise}>
+            <CheckoutContent />
+        </Elements>
     );
 }

@@ -12,6 +12,7 @@ import TrackOrder from './pages/customer/TrackOrder';
 import Contact from './pages/customer/Contact';
 import About from './pages/customer/About';
 import BookTable from './pages/customer/BookTable';
+import CustomerLogin from './pages/customer/LoginPage';
 import LoginPage from './pages/admin/LoginPage';
 import Dashboard from './pages/admin/Dashboard';
 import BookingManagement from './pages/admin/BookingManagement';
@@ -52,7 +53,7 @@ function App() {
           <Route path="contact" element={<Contact />} />
           <Route path="about" element={<About />} />
           <Route path="book-table" element={<BookTable />} />
-
+          <Route path="login" element={<CustomerLogin />} />
         </Route>
 
         {/* Admin Routes */}

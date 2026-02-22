@@ -24,13 +24,14 @@ export default function LoginPage() {
 
         // Mock authentication
         if (email === 'admin@foodie.com' && password === 'admin') {
-            login({ id: '1', name: 'Admin', email, role: 'admin' });
+            login(
+                { id: 1, name: 'Admin', email, role: 'admin' },
+                'mock_access_token',
+                'mock_refresh_token'
+            );
             navigate('/admin/dashboard');
-        } else if (email === 'user@foodie.com' && password === 'user') {
-            login({ id: '2', name: 'John Doe', email, role: 'customer' });
-            navigate('/');
         } else {
-            setError('Invalid email or password');
+            setError('Account restricted to administrators only');
         }
 
         setIsLoading(false);
@@ -57,15 +58,15 @@ export default function LoginPage() {
                     <div className="relative px-10 pt-12 pb-8 text-center">
 
 
-                        <div className="w-20 h-20 mx-auto mb-6 rounded-2xl bg-gradient-to-br from-orange-500 to-red-600 flex items-center justify-center shadow-lg transform -rotate-6">
-                            <span className="text-white font-black text-3xl tracking-tight">F</span>
+                        <div className="w-20 h-20 mx-auto mb-6 rounded-3xl bg-slate-900 dark:bg-orange-500 flex items-center justify-center shadow-2xl shadow-slate-900/20 dark:shadow-none transform hover:scale-110 transition-transform duration-500">
+                            <span className="text-white font-black text-4xl tracking-tighter">F</span>
                         </div>
 
-                        <h1 className="text-3xl font-extrabold text-gray-900 dark:text-white mb-2">
-                            Admin Portal
+                        <h1 className="text-4xl font-black text-slate-900 dark:text-white mb-3 tracking-tight">
+                            Admin <span className="text-orange-500">Portal</span>
                         </h1>
-                        <p className="text-gray-600 dark:text-gray-400">
-                            Authorized personnel only
+                        <p className="text-slate-500 dark:text-slate-400 font-medium text-sm">
+                            Management & Security Control Center
                         </p>
                     </div>
 
@@ -132,15 +133,15 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={isLoading}
-                            className="w-full py-4 bg-gradient-to-r from-orange-500 to-red-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:from-orange-600 hover:to-red-700 focus:outline-none focus:ring-4 focus:ring-orange-500/30 transition-all duration-300 disabled:opacity-70 disabled:cursor-not-allowed flex items-center justify-center gap-2 text-lg"
+                            className="w-full py-5 bg-slate-900 dark:bg-orange-500 text-white font-black text-[12px] uppercase tracking-[3px] rounded-[22px] shadow-2xl shadow-slate-900/20 dark:shadow-none hover:bg-orange-600 dark:hover:bg-orange-600 transition-all active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-3"
                         >
                             {isLoading ? (
                                 <>
-                                    <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    Signing in...
+                                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                    Authenticating...
                                 </>
                             ) : (
-                                'Sign In'
+                                'Access Dashboard'
                             )}
                         </button>
                     </form>
