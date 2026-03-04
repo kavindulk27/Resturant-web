@@ -16,9 +16,6 @@ export default function Footer() {
                     <div className="md:col-span-4">
                         <div className="flex items-center gap-3 mb-4">
                             <Logo />
-                            <span className="text-2xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-
-                            </span>
                         </div>
                         <p className="text-gray-400 leading-relaxed mb-6">
                             Taste the difference with our premium ingredients and passionate chefs.

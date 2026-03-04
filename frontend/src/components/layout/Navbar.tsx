@@ -37,9 +37,6 @@ export default function Navbar() {
                     {/* Logo */}
                     <Link to="/" className="group flex items-center">
                         <Logo />
-                        <span className="ml-3 text-xl font-bold bg-gradient-to-r from-orange-500 to-red-500 bg-clip-text text-transparent">
-
-                        </span>
                     </Link>
 
                     {/* Desktop Navigation Links */}
