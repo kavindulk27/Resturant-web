@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Truck, Store, CreditCard, Wallet, Loader2, ChevronRight, ChevronLeft, MapPin, Phone, User, CheckCircle2, Info } from 'lucide-react';
+import { Truck, Store, CreditCard, Wallet, Loader2, ChevronRight, ChevronLeft, MapPin, Phone, User, CheckCircle2 } from 'lucide-react';
 import { useCartStore } from '../../store/useCartStore';
 import api from '../../api/axios';
 import { loadStripe } from '@stripe/stripe-js';
@@ -48,7 +48,6 @@ function CheckoutContent() {
         handleSubmit,
         watch,
         trigger,
-        setValue,
         formState: { errors },
     } = useForm<CheckoutForm>({
         defaultValues: {
@@ -56,9 +55,6 @@ function CheckoutContent() {
             paymentMethod: 'cash',
         },
     });
-
-    const [showMap, setShowMap] = useState(false);
-    const orderLocation = watch('location');
 
     const deliveryMethod = watch('deliveryMethod');
     const paymentMethod = watch('paymentMethod');
@@ -398,18 +394,6 @@ function CheckoutContent() {
                     </div>
                 </div>
             </div>
-
-            <AnimatePresence>
-                {showMap && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm"
-                    >
-                    </motion.div>
-                )}
-            </AnimatePresence>
         </div>
     );
 }
